@@ -1,0 +1,10 @@
+{
+  "experimentalServices": {
+    "workflow": {
+      "type": "job",
+      "trigger": "workflow",
+      "root": "services/workflow",
+      "entrypoint": "workflow:wf"
+    }
+  }
+}

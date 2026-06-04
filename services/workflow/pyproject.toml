@@ -1,0 +1,8 @@
+[project]
+name = "workflow-service"
+version = "0.1.0"
+dependencies = ["vercel"]
+requires-python = ">=3.12"
+
+[tool.uv.sources]
+vercel = { git = "https://github.com/vercel/vercel-py" }

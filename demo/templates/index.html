@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Django + Vercel Workflow Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: #f5f5f5; padding: 40px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { margin-bottom: 8px; }
+    p.sub { color: #666; margin-bottom: 24px; }
+    .card { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.1); margin-bottom: 16px; }
+    form { display: flex; gap: 8px; }
+    input[type=text] { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; }
+    button { padding: 10px 20px; background: #000; color: white; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; }
+    button:hover { background: #333; }
+    button:disabled { background: #999; cursor: wait; }
+    .runs { display: flex; flex-direction: column; gap: 12px; }
+    .run { padding: 16px; border: 1px solid #e0e0e0; border-radius: 6px; }
+    .run-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .run-id { font-family: monospace; font-size: 12px; color: #999; }
+    .badge { padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 500; }
+    .badge.pending { background: #fff3cd; color: #856404; }
+    .badge.running { background: #cce5ff; color: #004085; }
+    .badge.completed { background: #d4edda; color: #155724; }
+    .badge.failed { background: #f8d7da; color: #721c24; }
+    .output { margin-top: 8px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Workflow Demo</h1>
+    <p class="sub">Django (local) triggering Python workflows on Vercel</p>
+    <div class="card">
+      <form id="startForm">
+        <input type="text" id="nameInput" placeholder="Enter a name..." value="Django" />
+        <button type="submit" id="submitBtn">Start Workflow</button>
+      </form>
+    </div>
+    <div class="runs" id="runs"></div>
+  </div>
+  <script>
+    const runs = [];
+
+    document.getElementById('startForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const name = document.getElementById('nameInput').value || 'World';
+      btn.disabled = true;
+      btn.textContent = 'Starting...';
+      try {
+        const res = await fetch(`/workflow/start/?name=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        runs.unshift({ id: data.run_id, name: data.name, status: 'pending', output: null });
+        render();
+        pollStatus(data.run_id);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Start Workflow';
+      }
+    });
+
+    async function pollStatus(runId) {
+      const poll = setInterval(async () => {
+        const res = await fetch(`/workflow/status/${runId}/`);
+        const data = await res.json();
+        const run = runs.find(r => r.id === runId);
+        if (run) {
+          run.status = data.status;
+          if (data.output) run.output = data.output;
+          render();
+          if (data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled') {
+            clearInterval(poll);
+          }
+        }
+      }, 2000);
+    }
+
+    function render() {
+      document.getElementById('runs').innerHTML = runs.map(r => `
+        <div class="run">
+          <div class="run-header">
+            <span class="badge ${r.status}">${r.status}</span>
+            <span class="run-id">${r.id}</span>
+          </div>
+          <div>greet("${r.name}")</div>
+          ${r.output ? `<div class="output">${r.output}</div>` : ''}
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>

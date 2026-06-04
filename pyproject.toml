@@ -1,0 +1,12 @@
+[project]
+name = "django-workflow-demo"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.0.5",
+    "vercel",
+]
+
+[tool.uv.sources]
+vercel = { git = "https://github.com/vercel/vercel-py.git" }
